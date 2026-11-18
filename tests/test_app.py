@@ -252,11 +252,11 @@ class InterfaceTests(unittest.TestCase):
 
     def test_login_rejects_wrong_password_and_accepts_correct_password(self):
         at = AppTest.from_file(str(Path(app.__file__)), default_timeout=60)
-        at.secrets['app_username'] = 'Aryane'
+        at.secrets['app_username'] = 'usuario_teste'
         at.secrets['app_password'] = 'test-secret-123'
         at.secrets['auth_cookie_key'] = 'test-only-cookie-signing-key-minimum-32-characters'
         at.run()
-        next(widget for widget in at.text_input if widget.label == 'Login').set_value('Aryane')
+        next(widget for widget in at.text_input if widget.label == 'Login').set_value('usuario_teste')
         next(widget for widget in at.text_input if widget.label == 'Senha').set_value('wrong')
         at.button[0].click().run()
         self.assertTrue(at.error)
@@ -272,9 +272,9 @@ class InterfaceTests(unittest.TestCase):
             with self.assertRaises(app.DataError):
                 app.Repository.configured()
 
-    def test_default_personal_password_is_hashed(self):
+    def test_configured_password_is_hashed(self):
         import bcrypt
-        self.assertTrue(bcrypt.checkpw(b'Ary123', app.DEFAULT_PASSWORD_HASH.encode()))
+        self.assertTrue(bcrypt.checkpw(b'test-only-password', app.hash_configured_password('test-only-password').encode()))
 
 
 if __name__ == '__main__':

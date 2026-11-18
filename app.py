@@ -37,7 +37,7 @@ STATUS = ("Programada", "Em_Processo", "Aguardando_Laudo", "Liberada", "Bloquead
 QUEUE_STATUS = ("Programada", "Em_Processo")
 FAMILIES = {"PA-ALC-325": "Alumina_Padrao", "PA-ALT-014": "Alumina_Padrao",
             "PA-WHT-900": "Brancos_Whitelum", "PA-FRS-75": "FerSiN", "PA-ALH-500": "Quimicos"}
-DEFAULT_PASSWORD_HASH = "$2b$12$9c49.SIiZiuBQAyiV80rpuSLkcQFczX4GkYP111Is1sKxJN4qx4vS"
+DEFAULT_PASSWORD_HASH = ""
 NAVIGATION = ("Torre de Controle PCP", "Motor MRP & Receitas", "Sequenciador de Produção",
               "Simulador de Prazo ATP", "Quarentena & Qualidade")
 SEED_CSV = {
@@ -1090,12 +1090,15 @@ def authenticate() -> Any:
         st.error("Configure auth_cookie_key com uma chave privada de pelo menos 32 caracteres para manter o acesso entre visitas.")
         st.stop()
     cookie_secret = cookie_secret or temporary_cookie_key()
-    username = str(secret("app_username", "Aryane")).strip()
+    username = str(secret("app_username", "usuario")).strip()
     password_hash = secret("app_password_hash", DEFAULT_PASSWORD_HASH)
     # Compatibilidade com instalações anteriores que configuraram app_password.
     password = secret("app_password")
     if password:
         password_hash = hash_configured_password(str(password))
+    if not isinstance(password_hash, str) or not re.fullmatch(r"\$2[aby]\$\d{2}\$.{53}", password_hash):
+        st.error("Configure o login e o hash da senha nos Secrets privados da hospedagem.")
+        st.stop()
     credential_version = hashlib.sha256(str(password).encode()).hexdigest() if password else str(password_hash)
     identity = hashlib.sha256((username.lower() + credential_version).encode()).hexdigest()
     if st.session_state.get("_credential_identity") != identity:
@@ -1106,7 +1109,7 @@ def authenticate() -> Any:
     signing_key = hashlib.sha256((str(cookie_secret) + identity).encode()).hexdigest()
     remembered = st.session_state.get("remember_browser", True)
     authenticator = stauth.Authenticate(st.session_state["_auth_credentials"],
-        cookie_name="pcp_aryane_access", cookie_key=signing_key,
+        cookie_name="pcp_access", cookie_key=signing_key,
         cookie_expiry_days=365 if remembered else 0, auto_hash=False, login_sleep_time=0)
     authenticator.login(location="unrendered")
     if st.session_state.get("authentication_status") is True:
@@ -1169,7 +1172,7 @@ def main() -> None:
         st.markdown('<div class="sidebar-index">AMBIENTE OPERACIONAL</div>', unsafe_allow_html=True)
         st.caption("GOOGLE SHEETS / CONECTADO" if repo.mode == "cloud" else "SANDBOX / DADOS EM MEMÓRIA")
         if authenticator is not None:
-            st.caption(f"Acesso pessoal · {st.session_state.get('name', 'Aryane')}")
+            st.caption(f"Acesso pessoal · {st.session_state.get('name', 'Pessoal')}")
         if repo.mode == "sandbox":
             st.caption("Alterações pertencem a esta sessão e são perdidas ao encerrá-la. Os dados iniciais seguem a base de novembro/2026.")
         if st.button("Atualizar dados", width="stretch"):
