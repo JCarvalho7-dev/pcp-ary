@@ -1,0 +1,7 @@
+streamlit==1.50.0
+pandas==2.3.3
+plotly==6.3.1
+gspread==6.2.1
+google-auth==2.41.1
+openpyxl==3.1.5
+streamlit-authenticator==0.4.2

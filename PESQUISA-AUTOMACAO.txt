@@ -1,0 +1,137 @@
+PESQUISA DE MERCADO E ROTEIRO DE AUTOMAÇÃO
+PCP & Telemetria de Produção | Consulta: 18/11/2026
+
+Este relatório relaciona práticas descritas em documentação oficial de fornecedores e padrões industriais com oportunidades da planta. As prioridades são recomendações de engenharia para o cenário fornecido, não estimativas de retorno financeiro. Não foram pesquisados preços, contratados serviços ou conectadas contas externas.
+
+1. O QUE JÁ FOI IMPLEMENTADO
+
+Tarefa manual: levantar materiais para cada ordem.
+Automação entregue: explosão de BOM por OP, perdas técnicas e consolidação por insumo. Alternância para incluir ordens em processo.
+
+Tarefa manual: conferir o que precisa comprar.
+Automação entregue: déficit urgente, compra para recompor o estoque mínimo, arredondamento de embalagens e requisição em Excel/CSV. O documento é um rascunho para Compras; não envia pedidos aos fornecedores.
+
+Tarefa manual: procurar urgências entre várias telas.
+Automação entregue: fila de exceções com atrasos, entregas do dia, laudos, insuficiência de materiais, conciliação e risco de capacidade.
+
+Tarefa manual: montar a sequência de produção.
+Automação entregue: comparação cronológica versus agrupamento por família, trocas, tempos e sequência exportável. O ganho é teórico porque o cadastro atual associa uma linha dedicada a cada família.
+
+Tarefa manual: estimar prazo para o Comercial.
+Automação entregue: consulta ATP com saldo, quantidade líquida, fila, velocidade da linha, setup, 16 h/dia e dias úteis. Também alerta sobre insuficiência de insumos. Não reserva estoque nem confirma pedido de venda.
+
+Tarefa manual: decidir reposição de produto acabado.
+Automação entregue: necessidade calculada pelo mínimo, descontando produção já em fila; o operador pode criar a OP sugerida em um clique. A revalidação reduz duplicidade no processo único do aplicativo.
+
+Tarefa manual: atualizar três células após liberar um lote.
+Automação entregue: um comando atualiza status e dois saldos em lote atômico no Sheets, após reler a situação atual. Segunda aprovação da mesma OP é recusada.
+
+Tarefa manual: acompanhar a carga das linhas.
+Automação entregue: horas acumuladas e datas estimadas por equipamento, com alerta de risco de atraso.
+
+Tarefa manual: verificar se o estoque retido confere com as OPs.
+Automação entregue: conciliação entre quarentena por SKU e OPs aguardando laudo/bloqueadas, com alertas de divergência.
+
+Tarefa manual: atualizar e preparar relatórios.
+Automação entregue: reavaliação a cada 60 segundos com a sessão ativa; exportações de base, materiais, sequência, ATP, exceções e eventos da sessão. Não há execução em segundo plano com a aplicação fechada.
+
+2. REFERÊNCIAS DE MERCADO CONSULTADAS
+
+Odoo 19 — Replenishment report
+A documentação descreve um painel que usa regras de reposição, prazos e demanda prevista. Para esta entrega, a aplicação é a geração de sugestões a partir do saldo projetado, com uma ação explícita para criar produção. Fornecedores e lead times ainda precisam ser cadastrados para uma reposição por data de necessidade.
+https://www.odoo.com/documentation/19.0/applications/inventory_and_mrp/inventory/warehouses_storage/replenishment/report.html
+
+SAP — Net Requirements Calculation for MRP
+A documentação descreve a comparação entre necessidades, estoque e recebimentos. Aqui o cálculo usa os saldos e as OPs disponíveis; pedidos de compra em trânsito e reservas de vendas não existem no modelo fornecido. Incluí-los é uma evolução recomendada antes de automatizar compromissos comerciais.
+https://help.sap.com/docs/SAP_S4HANA_ON-PREMISE/fe39e10a9a864a8f8dc9537704f0fa13/46abce5314894208e10000000a174cb4.html
+
+Microsoft Dynamics 365 — Finite capacity planning and scheduling
+O planejamento de capacidade considera recursos já ocupados e pode deslocar a entrega quando não há espaço disponível. A aplicação inicial é a previsão por linha; a evolução é cadastrar turnos, manutenção e apontamento parcial antes de tratar o prazo como promessa firme.
+https://learn.microsoft.com/en-us/dynamics365/supply-chain/master-planning/planning-optimization/finite-capacity
+
+Odoo 19 — Quality control points
+Pontos de controle podem gerar verificações em etapas de fabricação. A recomendação para a planta é criar automaticamente a pendência de análise ao terminar um lote, usando critérios laboratoriais cadastrados e mantendo a decisão de liberação com um responsável identificado.
+https://www.odoo.com/documentation/19.0/applications/inventory_and_mrp/quality/quality_management/quality_control_points.html
+
+GS1 — Global Traceability Standard
+A estrutura trabalha com eventos de rastreabilidade e os dados que descrevem esses eventos. Para a planta, recomenda-se registrar recebimento, consumo, transformação e expedição vinculados ao lote, com operador e horário; isso exige um histórico permanente adicional ao modelo agregado atual.
+https://support.gs1.org/support/solutions/articles/43000734535-what-is-the-gs1-traceability-standard-
+
+OPC Foundation — What is OPC?
+A referência descreve interoperabilidade para troca de dados industriais entre equipamentos e sistemas. A recomendação é começar com coleta somente de leitura em uma linha piloto, validando tags, unidades, frequência e qualidade do dado antes de automatizar apontamentos.
+https://opcfoundation.org/about/what-is-opc/
+
+Google Apps Script — Installable Triggers
+A documentação oferece gatilhos por tempo e por eventos. É uma opção para executar verificações da planilha com o painel fechado. O projeto não instala gatilhos nesta entrega; envio de alertas requer definir canal, destinatários, credenciais e política contra repetições.
+https://developers.google.com/apps-script/guides/triggers/installable
+
+3. PRÓXIMAS AUTOMAÇÕES, POR PRIORIDADE
+
+P0 — Movimentação de estoque e rastreabilidade persistente
+Gatilho: recebimento, fim de produção, liberação ou expedição.
+Ação: registrar o evento uma única vez, com ID, SKU, lote, quantidade, unidade, origem, destino, operador e horário; derivar os saldos dessas movimentações.
+Dados necessários: lotes de matéria-prima, composição do lote produzido, recebimentos e expedições.
+Benefício esperado: eliminar reconciliação manual repetitiva e permitir rastrear desvios.
+Condição técnica: banco transacional e autenticação individual. Preservar as quatro abas atuais como visão de integração, se necessário.
+
+P0 — Rotina de exceções e aviso de início de turno
+Gatilho: início de turno ou nova exceção relevante.
+Ação: gerar resumo e avisar os responsáveis definidos, com deduplicação, severidade e reconhecimento da ação.
+Dados necessários: horários, canal, destinatários, SLA e responsável por tipo de ocorrência.
+Condição técnica: serviço agendado/Apps Script independente do navegador, credenciais e registro permanente dos envios. Nenhum envio foi configurado nesta entrega.
+
+P1 — Compras por data de necessidade
+Gatilho: MRP detecta déficit no horizonte do fornecedor.
+Ação: sugerir requisição com quantidade, data necessária, lead time, lote mínimo e fornecedor; consolidar itens da mesma compra.
+Dados necessários: fornecedor por SKU, prazo, pedidos abertos, custo, múltiplo e aprovação.
+Condição operacional: aprovação de Compras antes de compromissos financeiros. Não usar apenas o estoque mínimo para decidir compra automática de alto valor.
+
+P1 — Recebimento por código de barras e pesagem
+Gatilho: leitura de lote na doca e captura da balança.
+Ação: conferir pedido, unidade e tolerância; registrar entrada disponível ou em quarentena segundo a regra do material.
+Dados necessários: etiquetas, pedido de compra, integração de balança e limites de divergência.
+Condição técnica: validar a precisão e a estabilidade da integração antes de gravar o estoque.
+
+P1 — Laboratório integrado
+Gatilho: lote concluído ou resultado publicado no sistema do laboratório.
+Ação: criar tarefa de ensaio, verificar campos obrigatórios e apresentar resultados contra limites por produto.
+Dados necessários: laudo, ensaios, faixas aceitas, versão da especificação e operador autorizado.
+Condição operacional: bloquear resultado fora de especificação e exigir aprovação identificada para liberação. A versão atual não valida laudos nem possui esses cadastros.
+
+P1 — Apontamento parcial da produção
+Gatilho: operador encerra uma etapa ou a máquina informa produção validada.
+Ação: atualizar restante da OP, consumo real, perdas e fila. Recalcular o prazo com a quantidade que falta.
+Dados necessários: tonelagem produzida, refugo/reprocesso, início/fim e motivos de parada.
+Benefício esperado: melhorar a previsão e eliminar a necessidade de tratar OP em processo como quantidade integral.
+
+P2 — Programação por recurso e calendário
+Gatilho: nova OP, atraso de material, parada de linha ou mudança de prioridade.
+Ação: propor reprogramação com capacidade finita, precedências, janelas de manutenção e matriz real de limpeza.
+Dados necessários: recursos compartilhados, capacidade por produto, calendários e restrições sanitárias/contaminação.
+Condição técnica: modelar a diferença entre linhas dedicadas e compartilhadas. A comparação global atual não comprova economia física de setup.
+
+P2 — Comercial com reserva e compromisso de entrega
+Gatilho: proposta aprovada ou consulta de novo pedido.
+Ação: considerar reservas e recebimentos, devolver um prazo com validade, e reservar apenas após confirmação de venda.
+Dados necessários: carteira de vendas, prioridades, frete, liberação de qualidade e política de reserva.
+Condição operacional: não prometer com base apenas no saldo bruto sem considerar os pedidos já comprometidos.
+
+P2 — Telemetria real e manutenção
+Gatilho: coleta de estado, vazão, energia, temperatura ou vibração.
+Ação: registrar séries temporais e eventos; detectar anomalias com regras validadas; abrir tarefa de manutenção.
+Dados necessários: mapa de tags, protocolo de CLP, gateway, frequência, limites e histórico.
+Condição técnica: OPC UA/MQTT conforme o equipamento. Coleta inicial somente de leitura e separada do controle do processo.
+
+P2 — Indicadores de eficiência e perdas
+Gatilho: encerramento de turno/OP com dados confiáveis.
+Ação: comparar produção real com meta, consumo com BOM, perdas por causa e disponibilidade.
+Dados necessários: tempo planejado, paradas, produção boa/refugo e capacidade nominal coerente.
+Condição analítica: não calcular OEE usando apenas status de OP ou estoque; faltam disponibilidade, desempenho e qualidade medidos.
+
+4. ORDEM RECOMENDADA DE IMPLANTAÇÃO
+
+Primeiro, operar o sandbox com os responsáveis de PCP, Compras e Qualidade e validar conceitos e unidades. Depois, conectar uma planilha de homologação, corrigir divergências dos dados e validar os fluxos de gravação. Em seguida, criar movimentações e rastreabilidade permanentes com identificação por usuário. Só então ativar rotinas externas, integração de recebimento/laboratório e coleta da linha piloto.
+
+Critérios de aceite sugeridos: uma OP não gera duas movimentações para o mesmo evento; lote bloqueado não vira saldo disponível; compras consideram pedidos já abertos; alertas não repetem a mesma ocorrência sem mudança; o prazo considera a quantidade ainda não produzida; todas as ações relevantes têm responsável e horário.
+
+Nenhuma estimativa de redução percentual, economia monetária ou prazo de projeto foi inventada. Esses valores dependem do histórico real de ocorrências, horas gastas, lead times e dados da planta.
